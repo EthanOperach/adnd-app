@@ -1,0 +1,1009 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scroll Card Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=EB+Garamond:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #15100b;
+    --panel: #1f1811;
+    --field: #2a2017;
+    --line: #3e3024;
+    --text: #efe3cc;
+    --muted: #a8977c;
+    --gold: #d9ab55;
+    --gold-dim: #8a5a1c;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100dvh;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    padding: 14px 20px; border-bottom: 1px solid var(--line);
+  }
+  header h1 {
+    margin: 0; font: 700 18px/1.2 Cinzel, Georgia, serif;
+    letter-spacing: .08em; color: var(--gold);
+  }
+  header p { margin: 0; color: var(--muted); font-size: 13px; }
+
+  .app {
+    display: grid; grid-template-columns: minmax(290px, 360px) 1fr;
+    gap: 20px; padding: 20px; max-width: 1200px; margin: 0 auto;
+  }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px; min-width: 0;
+    display: flex; flex-direction: column; gap: 16px; align-self: start;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field > label, .label {
+    font-size: 12px; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted);
+    display: flex; justify-content: space-between;
+  }
+  input[type=text], textarea {
+    width: 100%; background: var(--field); color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; font: inherit;
+  }
+  textarea { resize: vertical; min-height: 130px; }
+  input[type=text]:focus, textarea:focus, button:focus-visible, .dropzone:focus-within {
+    outline: 2px solid var(--gold); outline-offset: 1px; border-color: transparent;
+  }
+
+  .dropzone {
+    border: 1.5px dashed var(--line); border-radius: 8px; padding: 14px;
+    display: flex; align-items: center; gap: 12px;
+    background: var(--field); transition: border-color .15s, background .15s;
+  }
+  .dropzone.over { border-color: var(--gold); background: #33271b; }
+  .dropzone .thumb {
+    width: 52px; height: 52px; border-radius: 6px; flex: none;
+    background: #120d09 center/cover no-repeat; border: 1px solid var(--line);
+  }
+  .dropzone .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .dropzone .info small {
+    color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  button {
+    font: inherit; cursor: pointer; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--field); color: var(--text);
+    padding: 8px 12px;
+  }
+  button:hover { border-color: var(--gold-dim); }
+  button.link { padding: 0; border: 0; background: none; color: var(--gold); text-align: left; }
+  button.primary {
+    background: linear-gradient(#e2b766, #b98632); color: #24160a; border: 0;
+    font-weight: 700; padding: 12px; font-size: 16px;
+  }
+  button.primary:hover { filter: brightness(1.07); }
+  button:disabled { opacity: .5; cursor: default; }
+
+  .row { display: flex; align-items: center; gap: 10px; }
+  input[type=range] { flex: 1; accent-color: var(--gold); }
+  .hint { margin: 0; color: var(--muted); font-size: 13px; }
+
+  .switch { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+  .switch input { position: absolute; opacity: 0; pointer-events: none; }
+  .switch .track {
+    width: 40px; height: 22px; border-radius: 11px; background: var(--line);
+    position: relative; transition: background .15s; flex: none;
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--text); transition: transform .15s;
+  }
+  .switch input:checked + .track { background: var(--gold-dim); }
+  .switch input:checked + .track::after { transform: translateX(18px); }
+  .switch input:focus-visible + .track { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  .preview { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .stage {
+    height: calc(100dvh - 150px); min-height: 420px;
+    border-radius: var(--radius); border: 1px solid var(--line);
+    background: repeating-conic-gradient(#251c14 0 25%, #1c150f 0 50%) 0 0 / 22px 22px;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .stage canvas { display: block; touch-action: none; }
+  .stage canvas.grab { cursor: grab; }
+  .stage canvas.grabbing { cursor: grabbing; }
+  .meta { margin: 0; color: var(--muted); font-size: 13px; text-align: center; min-height: 1.45em; }
+  .meta .warn { color: #f0a35a; }
+
+  @media (max-width: 760px) {
+    .app { grid-template-columns: minmax(0, 1fr); padding: 16px; gap: 16px; }
+    .stage { height: min(78dvh, calc((100vw - 32px) * 1.5)); min-height: 320px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Scroll Card Maker</h1>
+  <p>Transparent PNG cards for Roll20 — 4×6 squares at 2×</p>
+</header>
+
+<main class="app">
+  <section class="panel" aria-label="Card inputs">
+    <div class="field">
+      <span class="label">Image</span>
+      <div class="dropzone" id="dropzone">
+        <div class="thumb" id="thumb"></div>
+        <div class="info">
+          <button type="button" class="link" id="pick">Choose image…</button>
+          <small id="fileName">or drop / paste one here</small>
+        </div>
+        <input type="file" id="file" accept="image/*" hidden>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="title">Title</label>
+      <input type="text" id="title" autocomplete="off" value="The Blackfist">
+    </div>
+
+    <div class="field">
+      <label for="desc">Description</label>
+      <textarea id="desc" rows="6">A scarred half-orc mercenary who leads the Ironhand Company. He never breaks a contract — and never forgives one broken.</textarea>
+    </div>
+
+    <div class="field">
+      <label for="zoom">Image zoom <output id="zoomOut">100%</output></label>
+      <div class="row">
+        <input type="range" id="zoom" min="1" max="5" step="0.01" value="1">
+        <button type="button" id="resetCrop">Reset</button>
+      </div>
+      <p class="hint">Drag the image in the preview to pan. Scroll or pinch to zoom.</p>
+    </div>
+
+    <label class="switch">
+      <input type="checkbox" id="tokenMode">
+      <span class="track"></span>
+      <span>Token mode <span class="hint">(280×280 round token)</span></span>
+    </label>
+
+    <button type="button" class="primary" id="download" disabled>Download PNG</button>
+  </section>
+
+  <section class="preview" aria-label="Preview">
+    <div class="stage" id="stage">
+      <canvas id="canvas" width="560" height="840" aria-label="Card preview"></canvas>
+    </div>
+    <p class="meta" id="meta">Loading fonts…</p>
+  </section>
+</main>
+
+<script>
+/* ==========================================================================
+   ScrollCard renderer — pure drawing code, no DOM/UI dependencies.
+   Can be lifted into a module later: ScrollCard.renderCard / renderToken.
+   ========================================================================== */
+const ScrollCard = (() => {
+  const W = 560, H = 840;
+  const TOKEN = 280;
+
+  const L = {
+    roll: { r: 19, topY: 88, botY: 752 },
+    paper: { x0: 58, x1: 502, y0: 96, y1: 744 },
+    border: { x0: 84, x1: 476, y0: 128, y1: 712, gap: 6 },
+    title: { cy: 192, maxW: 356, max: 44, min1: 32, min2: 20 },
+    dividerY: 238,
+    frame: { x: 105, y: 258, w: 350, h: 228, bw: 6 },
+    desc: { cx: 280, w: 310, y0: 508, y1: 686, max: 25, min: 15, lh: 1.25 },
+    token: { ro: 138, ri: 122 },
+  };
+
+  const FONT_TITLE = (px) => `700 ${px}px Cinzel, "Trajan Pro", Georgia, serif`;
+  const FONT_DESC = (px) => `500 ${px}px "EB Garamond", Garamond, Georgia, serif`;
+
+  // Deterministic PRNG so the texture is identical on every export.
+  function rng(seed) {
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* ---------------- text helpers ---------------- */
+
+  function wrap(ctx, text, maxW) {
+    const out = [];
+    for (const para of text.split(/\r?\n/)) {
+      const words = para.split(/\s+/).filter(Boolean);
+      if (!words.length) { out.push(''); continue; }
+      let line = '';
+      for (let w of words) {
+        // Hard-break words that are wider than the whole line.
+        while (ctx.measureText(w).width > maxW) {
+          if (line) { out.push(line); line = ''; }
+          let i = 1;
+          while (i < w.length && ctx.measureText(w.slice(0, i + 1)).width <= maxW) i++;
+          out.push(w.slice(0, i));
+          w = w.slice(i);
+        }
+        const test = line ? line + ' ' + w : w;
+        if (ctx.measureText(test).width <= maxW) line = test;
+        else { out.push(line); line = w; }
+      }
+      out.push(line);
+    }
+    return out;
+  }
+
+  function ellipsize(ctx, line, maxW) {
+    let s = line;
+    while (s && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
+    return s.trimEnd() + '…';
+  }
+
+  function setSpacing(ctx, v) { if ('letterSpacing' in ctx) ctx.letterSpacing = v; }
+
+  function layoutTitle(ctx, raw) {
+    const text = raw.trim().toUpperCase();
+    const t = L.title;
+    if (!text) return { size: 0, lines: [], truncated: false };
+    setSpacing(ctx, '1px');
+    // 1) single line, shrinking 44 -> 32
+    for (let px = t.max; px >= t.min1; px--) {
+      ctx.font = FONT_TITLE(px);
+      if (!text.includes('\n') && ctx.measureText(text).width <= t.maxW) {
+        return { size: px, lines: [text], truncated: false };
+      }
+    }
+    // 2) two lines, shrinking 32 -> 20
+    for (let px = t.min1; px >= t.min2; px--) {
+      ctx.font = FONT_TITLE(px);
+      const lines = wrap(ctx, text, t.maxW);
+      if (lines.length <= 2) return { size: px, lines, truncated: false };
+    }
+    // 3) still too long: clamp to 2 lines with ellipsis
+    ctx.font = FONT_TITLE(t.min2);
+    const lines = wrap(ctx, text, t.maxW).slice(0, 2);
+    lines[1] = ellipsize(ctx, lines[1], t.maxW);
+    return { size: t.min2, lines, truncated: true };
+  }
+
+  function layoutDesc(ctx, raw) {
+    const text = raw.trim();
+    const d = L.desc, areaH = d.y1 - d.y0;
+    if (!text) return { size: 0, lines: [], lh: 0, truncated: false };
+    setSpacing(ctx, '0px');
+    for (let px = d.max; px >= d.min; px -= 0.5) {
+      ctx.font = FONT_DESC(px);
+      const lines = wrap(ctx, text, d.w);
+      const lh = px * d.lh;
+      if (lines.length * lh <= areaH) return { size: px, lines, lh, truncated: false };
+    }
+    ctx.font = FONT_DESC(d.min);
+    const lh = d.min * d.lh;
+    const max = Math.floor(areaH / lh);
+    const lines = wrap(ctx, text, d.w).slice(0, max);
+    lines[max - 1] = ellipsize(ctx, lines[max - 1], d.w);
+    return { size: d.min, lines, lh, truncated: true };
+  }
+
+  /* ---------------- gradients ---------------- */
+
+  function brassV(ctx, y0, y1) {
+    const g = ctx.createLinearGradient(0, y0, 0, y1);
+    g.addColorStop(0, '#4a300a');
+    g.addColorStop(0.25, '#a8792a');
+    g.addColorStop(0.42, '#f6dc8a');
+    g.addColorStop(0.6, '#c99a3c');
+    g.addColorStop(1, '#5a3a0e');
+    return g;
+  }
+
+  function goldH(ctx, x0, x1) {
+    const g = ctx.createLinearGradient(x0, 0, x1, 0);
+    g.addColorStop(0, '#8a5a1c');
+    g.addColorStop(0.3, '#c9973f');
+    g.addColorStop(0.5, '#f0d58a');
+    g.addColorStop(0.7, '#c9973f');
+    g.addColorStop(1, '#8a5a1c');
+    return g;
+  }
+
+  function goldDiag(ctx, x0, y0, x1, y1) {
+    const g = ctx.createLinearGradient(x0, y0, x1, y1);
+    g.addColorStop(0, '#6b4412');
+    g.addColorStop(0.2, '#e2bb62');
+    g.addColorStop(0.35, '#fff0b8');
+    g.addColorStop(0.5, '#b98a33');
+    g.addColorStop(0.72, '#f0d07c');
+    g.addColorStop(1, '#6b4412');
+    return g;
+  }
+
+  /* ---------------- scroll base (static, cached) ---------------- */
+
+  function wobble(y, side) {
+    return 2.2 * Math.sin(y * 0.045 + side) + 1.3 * Math.sin(y * 0.13 + 2 * side) + 0.6 * Math.sin(y * 0.31 + side);
+  }
+
+  function traceParchment(ctx) {
+    const { x0, x1, y0, y1 } = L.paper;
+    ctx.moveTo(x0 + wobble(y0, -1), y0);
+    for (let y = y0; y <= y1; y += 4) ctx.lineTo(x1 + wobble(y, 1), y);
+    ctx.lineTo(x1 + wobble(y1, 1), y1);
+    for (let y = y1; y >= y0; y -= 4) ctx.lineTo(x0 + wobble(y, -1), y);
+    ctx.closePath();
+  }
+
+  function makeTexture() {
+    const w = L.paper.x1 - L.paper.x0 + 16, h = L.paper.y1 - L.paper.y0;
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    const r = rng(1337);
+
+    // fine grain
+    const img = g.createImageData(w, h), d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const v = r();
+      if (v < 0.5) { d[i] = 80; d[i + 1] = 48; d[i + 2] = 18; d[i + 3] = v * 36; }
+      else { d[i] = 255; d[i + 1] = 246; d[i + 2] = 220; d[i + 3] = (v - 0.5) * 30; }
+    }
+    g.putImageData(img, 0, 0);
+
+    // soft mottling
+    for (let i = 0; i < 26; i++) {
+      const x = r() * w, y = r() * h, rad = 30 + r() * 110, a = 0.03 + r() * 0.07;
+      const gr = g.createRadialGradient(x, y, 0, x, y, rad);
+      gr.addColorStop(0, `rgba(140,90,35,${a})`);
+      gr.addColorStop(1, 'rgba(140,90,35,0)');
+      g.fillStyle = gr;
+      g.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+    }
+
+    // faint ring stains
+    for (let i = 0; i < 3; i++) {
+      const x = r() * w, y = r() * h, rad = 18 + r() * 40, s = r() * 6;
+      g.strokeStyle = `rgba(120,70,25,${0.06 + r() * 0.05})`;
+      g.lineWidth = 1.5 + r() * 2;
+      g.beginPath(); g.arc(x, y, rad, s, s + 4.5); g.stroke();
+    }
+
+    // fibers
+    g.lineCap = 'round';
+    for (let i = 0; i < 180; i++) {
+      const x = r() * w, y = r() * h, len = 6 + r() * 22, a = r() * Math.PI;
+      g.strokeStyle = r() < 0.5 ? `rgba(110,70,30,${0.05 + r() * 0.08})` : `rgba(255,250,230,${0.08 + r() * 0.1})`;
+      g.lineWidth = 0.6 + r() * 0.6;
+      g.beginPath();
+      g.moveTo(x, y);
+      g.quadraticCurveTo(x + Math.cos(a) * len / 2 + r() * 4 - 2, y + Math.sin(a) * len / 2 + r() * 4 - 2,
+                         x + Math.cos(a) * len, y + Math.sin(a) * len);
+      g.stroke();
+    }
+    return c;
+  }
+
+  function drawParchment(ctx) {
+    ctx.save();
+    ctx.beginPath(); traceParchment(ctx); ctx.clip();
+
+    // warm elliptical radial gradient
+    ctx.save();
+    ctx.translate(W / 2, H / 2); ctx.scale(1, 1.5);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 240);
+    g.addColorStop(0, '#f6e7c1');
+    g.addColorStop(0.55, '#eed8a6');
+    g.addColorStop(0.85, '#dbb67b');
+    g.addColorStop(1, '#c99c5c');
+    ctx.fillStyle = g;
+    ctx.fillRect(-300, -300, 600, 600);
+    ctx.restore();
+
+    ctx.drawImage(makeTexture(), L.paper.x0 - 8, L.paper.y0);
+
+    // vignette
+    ctx.save();
+    ctx.translate(W / 2, H / 2); ctx.scale(1, 1.5);
+    const v = ctx.createRadialGradient(0, 0, 120, 0, 0, 250);
+    v.addColorStop(0, 'rgba(80,40,10,0)');
+    v.addColorStop(1, 'rgba(80,40,10,0.32)');
+    ctx.fillStyle = v;
+    ctx.fillRect(-300, -300, 600, 600);
+    ctx.restore();
+
+    // inner edge burn (shadow of an even-odd "frame" around the sheet)
+    ctx.save();
+    ctx.shadowColor = 'rgba(70,35,8,0.6)';
+    ctx.shadowBlur = 20;
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.rect(-100, -100, W + 200, H + 200);
+    traceParchment(ctx);
+    ctx.fill('evenodd');
+    ctx.restore();
+
+    // shadows cast by the rolls
+    const r = L.roll.r;
+    let s = ctx.createLinearGradient(0, L.roll.topY + r, 0, L.roll.topY + r + 26);
+    s.addColorStop(0, 'rgba(50,25,5,0.4)'); s.addColorStop(1, 'rgba(50,25,5,0)');
+    ctx.fillStyle = s; ctx.fillRect(0, L.roll.topY, W, r + 26);
+    s = ctx.createLinearGradient(0, L.roll.botY - r, 0, L.roll.botY - r - 22);
+    s.addColorStop(0, 'rgba(50,25,5,0.35)'); s.addColorStop(1, 'rgba(50,25,5,0)');
+    ctx.fillStyle = s; ctx.fillRect(0, L.roll.botY - r - 22, W, 22 + r);
+    ctx.restore();
+
+    // crisp edge line
+    ctx.strokeStyle = 'rgba(115,72,30,0.55)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); traceParchment(ctx); ctx.stroke();
+  }
+
+  function drawRoll(ctx, cy, seed) {
+    const R = L.roll.r, bx0 = 46, bx1 = 514;
+
+    // end knobs (behind collars)
+    for (const side of [-1, 1]) {
+      const kx = side < 0 ? 34 : W - 34;
+      const tx = side < 0 ? 25 : W - 25;
+      // tip
+      ctx.fillStyle = brassV(ctx, cy - 5, cy + 5);
+      ctx.beginPath(); ctx.ellipse(tx, cy, 3.2, 5, 0, 0, Math.PI * 2); ctx.fill();
+      // knob
+      const g = ctx.createRadialGradient(kx - 3, cy - 6, 1, kx, cy, 15);
+      g.addColorStop(0, '#fff3c2');
+      g.addColorStop(0.35, '#e0b85a');
+      g.addColorStop(0.75, '#a1731f');
+      g.addColorStop(1, '#4a300a');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(kx, cy, 10.5, 14, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(50,30,5,0.6)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    // wooden body
+    const g = ctx.createLinearGradient(0, cy - R, 0, cy + R);
+    g.addColorStop(0, '#2b1608');
+    g.addColorStop(0.18, '#6e4220');
+    g.addColorStop(0.38, '#b47d47');
+    g.addColorStop(0.52, '#8d5a2c');
+    g.addColorStop(0.82, '#4f2d12');
+    g.addColorStop(1, '#1e0f05');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.roundRect(bx0, cy - R, bx1 - bx0, 2 * R, 7); ctx.fill();
+
+    // wood grain
+    ctx.save();
+    ctx.beginPath(); ctx.roundRect(bx0, cy - R, bx1 - bx0, 2 * R, 7); ctx.clip();
+    const r = rng(seed);
+    for (let i = 0; i < 16; i++) {
+      const y = cy - R + 3 + r() * (2 * R - 6), amp = 0.6 + r() * 1.4, ph = r() * 6;
+      ctx.strokeStyle = r() < 0.7 ? `rgba(30,14,4,${0.18 + r() * 0.2})` : `rgba(230,180,120,${0.1 + r() * 0.12})`;
+      ctx.lineWidth = 0.6 + r() * 0.8;
+      ctx.beginPath();
+      for (let x = bx0; x <= bx1; x += 6) {
+        const yy = y + amp * Math.sin(x * 0.02 + ph);
+        x === bx0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+      }
+      ctx.stroke();
+    }
+    // specular sheen
+    const sh = ctx.createLinearGradient(0, cy - R, 0, cy);
+    sh.addColorStop(0, 'rgba(255,220,170,0)');
+    sh.addColorStop(0.55, 'rgba(255,220,170,0.18)');
+    sh.addColorStop(1, 'rgba(255,220,170,0)');
+    ctx.fillStyle = sh;
+    ctx.fillRect(bx0, cy - R, bx1 - bx0, R);
+    ctx.restore();
+
+    // brass collars
+    for (const cx of [bx0, bx1]) {
+      ctx.fillStyle = brassV(ctx, cy - R - 3, cy + R + 3);
+      ctx.beginPath(); ctx.roundRect(cx - 5, cy - R - 3, 10, 2 * R + 6, 3); ctx.fill();
+      ctx.strokeStyle = 'rgba(50,30,5,0.7)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+  }
+
+  let baseCache = null;
+  function scrollBase() {
+    if (baseCache) return baseCache;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const ctx = c.getContext('2d');
+    drawParchment(ctx);
+    drawRoll(ctx, L.roll.topY, 7);
+    drawRoll(ctx, L.roll.botY, 11);
+    return (baseCache = c);
+  }
+
+  /* ---------------- ornaments ---------------- */
+
+  function flourish(ctx, x, y, sx, sy) {
+    ctx.save();
+    ctx.translate(x, y); ctx.scale(sx, sy);
+    ctx.strokeStyle = ctx.fillStyle = '#8a5a1c';
+    ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    for (const swap of [false, true]) {
+      ctx.save();
+      if (swap) ctx.transform(0, 1, 1, 0, 0, 0); // mirror across the diagonal
+      ctx.beginPath();
+      ctx.moveTo(7, 7);
+      ctx.bezierCurveTo(13, 3, 24, 3, 30, 8);
+      ctx.bezierCurveTo(35, 12, 33, 19, 27, 19);
+      ctx.bezierCurveTo(22, 19, 21, 13, 26, 12.5);
+      ctx.stroke();
+      ctx.restore();
+    }
+    // inner arc + dot
+    ctx.beginPath();
+    ctx.moveTo(19, 9.5); ctx.quadraticCurveTo(10, 10, 9.5, 19);
+    ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath(); ctx.arc(14.5, 14.5, 1.8, 0, Math.PI * 2); ctx.fill();
+    // corner diamond
+    ctx.beginPath();
+    ctx.moveTo(4, 0.5); ctx.lineTo(7.5, 4); ctx.lineTo(4, 7.5); ctx.lineTo(0.5, 4); ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawBorder(ctx) {
+    const b = L.border, g = b.gap;
+    ctx.strokeStyle = '#8a5a1c';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(b.x0 + 1.5, b.y0 + 1.5, b.x1 - b.x0 - 3, b.y1 - b.y0 - 3);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(b.x0 + g + 0.5, b.y0 + g + 0.5, b.x1 - b.x0 - 2 * g - 1, b.y1 - b.y0 - 2 * g - 1);
+    const ix0 = b.x0 + g + 1, ix1 = b.x1 - g - 1, iy0 = b.y0 + g + 1, iy1 = b.y1 - g - 1;
+    flourish(ctx, ix0, iy0, 1, 1);
+    flourish(ctx, ix1, iy0, -1, 1);
+    flourish(ctx, ix0, iy1, 1, -1);
+    flourish(ctx, ix1, iy1, -1, -1);
+  }
+
+  function drawDivider(ctx) {
+    const y = L.dividerY, cx = W / 2, x0 = 150, x1 = W - 150, gap = 15;
+    ctx.fillStyle = goldH(ctx, x0, x1);
+    ctx.beginPath(); // left taper
+    ctx.moveTo(x0, y); ctx.lineTo(cx - gap, y - 1.6); ctx.lineTo(cx - gap, y + 1.6); ctx.closePath();
+    ctx.moveTo(x1, y); ctx.lineTo(cx + gap, y - 1.6); ctx.lineTo(cx + gap, y + 1.6); ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#8a5a1c';
+    ctx.beginPath(); ctx.arc(x0 - 4, y, 1.8, 0, Math.PI * 2); ctx.arc(x1 + 4, y, 1.8, 0, Math.PI * 2); ctx.fill();
+    // diamond
+    ctx.beginPath();
+    ctx.moveTo(cx, y - 9); ctx.lineTo(cx + 9, y); ctx.lineTo(cx, y + 9); ctx.lineTo(cx - 9, y); ctx.closePath();
+    ctx.fillStyle = goldDiag(ctx, cx - 9, y - 9, cx + 9, y + 9); ctx.fill();
+    ctx.strokeStyle = '#6b4412'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx, y - 3.5); ctx.lineTo(cx + 3.5, y); ctx.lineTo(cx, y + 3.5); ctx.lineTo(cx - 3.5, y); ctx.closePath();
+    ctx.fillStyle = '#6b4412'; ctx.fill();
+  }
+
+  /* ---------------- image ---------------- */
+
+  // crop = { zoom, panX, panY } in frame pixels; zoom 1 = image covers the frame.
+  function coverScale(img) {
+    return Math.max(L.frame.w / img.width, L.frame.h / img.height);
+  }
+
+  function clampCrop(img, crop) {
+    if (!img) return crop;
+    const s = coverScale(img) * crop.zoom;
+    const mx = Math.max(0, (img.width * s - L.frame.w) / 2);
+    const my = Math.max(0, (img.height * s - L.frame.h) / 2);
+    crop.panX = Math.min(mx, Math.max(-mx, crop.panX));
+    crop.panY = Math.min(my, Math.max(-my, crop.panY));
+    return crop;
+  }
+
+  // Draw the cropped image centered at (cx, cy); k scales frame-pixels to output pixels.
+  function drawCropped(ctx, img, crop, cx, cy, k) {
+    const s = coverScale(img) * crop.zoom * k;
+    const w = img.width * s, h = img.height * s;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, cx + crop.panX * k - w / 2, cy + crop.panY * k - h / 2, w, h);
+  }
+
+  function drawPlaceholder(ctx, cx, cy) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(239,227,204,0.35)';
+    ctx.font = FONT_DESC(18);
+    setSpacing(ctx, '0px');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('Drop an image here', cx, cy);
+    ctx.restore();
+  }
+
+  function drawFrame(ctx, img, crop, placeholder) {
+    const f = L.frame, bw = f.bw;
+    ctx.save();
+    ctx.shadowColor = 'rgba(40,20,5,0.45)'; ctx.shadowBlur = 10; ctx.shadowOffsetY = 3;
+    ctx.fillStyle = goldDiag(ctx, f.x - bw, f.y - bw, f.x + f.w + bw, f.y + f.h + bw);
+    ctx.fillRect(f.x - bw, f.y - bw, f.w + 2 * bw, f.h + 2 * bw);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(70,40,10,0.85)'; ctx.lineWidth = 1;
+    ctx.strokeRect(f.x - bw + 0.5, f.y - bw + 0.5, f.w + 2 * bw - 1, f.h + 2 * bw - 1);
+    ctx.strokeStyle = 'rgba(255,240,190,0.5)';
+    ctx.strokeRect(f.x - bw + 2.5, f.y - bw + 2.5, f.w + 2 * bw - 5, f.h + 2 * bw - 5);
+
+    ctx.fillStyle = '#1a110a';
+    ctx.fillRect(f.x, f.y, f.w, f.h);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(f.x, f.y, f.w, f.h); ctx.clip();
+    if (img) drawCropped(ctx, img, crop, f.x + f.w / 2, f.y + f.h / 2, 1);
+    else if (placeholder) drawPlaceholder(ctx, f.x + f.w / 2, f.y + f.h / 2);
+    ctx.restore();
+    // inset shadow
+    ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = 2;
+    ctx.strokeRect(f.x + 1, f.y + 1, f.w - 2, f.h - 2);
+  }
+
+  /* ---------------- public renderers ---------------- */
+
+  function renderCard(ctx, { title = '', description = '', image = null, crop = { zoom: 1, panX: 0, panY: 0 }, placeholder = false } = {}) {
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 14; ctx.shadowOffsetY = 6;
+    ctx.drawImage(scrollBase(), 0, 0);
+    ctx.restore();
+
+    drawBorder(ctx);
+    drawDivider(ctx);
+    drawFrame(ctx, image, crop, placeholder);
+
+    // title
+    const tl = layoutTitle(ctx, title);
+    if (tl.lines.length) {
+      ctx.save();
+      ctx.font = FONT_TITLE(tl.size);
+      setSpacing(ctx, '1px');
+      ctx.fillStyle = '#3b2410';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+      const cap = ctx.measureText('H').actualBoundingBoxAscent || tl.size * 0.7;
+      const lh = tl.size * 1.15;
+      const first = L.title.cy - (lh * (tl.lines.length - 1)) / 2 + cap / 2;
+      ctx.shadowColor = 'rgba(255,245,215,0.5)'; ctx.shadowOffsetY = 1;
+      tl.lines.forEach((ln, i) => ctx.fillText(ln, W / 2, first + i * lh));
+      ctx.restore();
+    }
+
+    // description
+    const dl = layoutDesc(ctx, description);
+    if (dl.lines.length) {
+      ctx.save();
+      ctx.font = FONT_DESC(dl.size);
+      setSpacing(ctx, '0px');
+      ctx.fillStyle = '#2e1c0c';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const d = L.desc;
+      const top = d.y0 + (d.y1 - d.y0 - dl.lines.length * dl.lh) / 2;
+      dl.lines.forEach((ln, i) => ctx.fillText(ln, d.cx, top + dl.lh * (i + 0.5)));
+      ctx.restore();
+    }
+    setSpacing(ctx, '0px');
+    return { title: tl, description: dl };
+  }
+
+  function renderToken(ctx, { image = null, crop = { zoom: 1, panX: 0, panY: 0 }, placeholder = false } = {}) {
+    const c = TOKEN / 2, { ro, ri } = L.token;
+    ctx.clearRect(0, 0, TOKEN, TOKEN);
+
+    ctx.save();
+    ctx.beginPath(); ctx.arc(c, c, ri + 1, 0, Math.PI * 2); ctx.clip();
+    ctx.fillStyle = '#1a110a'; ctx.fillRect(0, 0, TOKEN, TOKEN);
+    if (image) drawCropped(ctx, image, crop, c, c, tokenScale());
+    else if (placeholder) drawPlaceholder(ctx, c, c);
+    const sh = ctx.createRadialGradient(c, c, ri - 18, c, c, ri + 1);
+    sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.45)');
+    ctx.fillStyle = sh; ctx.fillRect(0, 0, TOKEN, TOKEN);
+    ctx.restore();
+
+    // gold ring
+    ctx.beginPath();
+    ctx.arc(c, c, ro, 0, Math.PI * 2);
+    ctx.arc(c, c, ri, 0, Math.PI * 2, true);
+    ctx.fillStyle = goldDiag(ctx, c - ro, c - ro, c + ro, c + ro);
+    ctx.fill('evenodd');
+    const ring = (rad, color, w) => {
+      ctx.beginPath(); ctx.arc(c, c, rad, 0, Math.PI * 2);
+      ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke();
+    };
+    ring(ro - 0.75, '#4a300a', 1.5);
+    ring(ri + 0.5, '#4a300a', 1.5);
+    ring((ro + ri) / 2, 'rgba(90,55,15,0.55)', 1.2);
+    ring((ro + ri) / 2 + 1.2, 'rgba(255,240,190,0.45)', 0.8);
+    // rivets
+    ctx.fillStyle = '#5a3a0e';
+    for (let i = 0; i < 4; i++) {
+      const a = Math.PI / 4 + i * Math.PI / 2, rm = (ro + ri) / 2;
+      ctx.beginPath(); ctx.arc(c + Math.cos(a) * rm, c + Math.sin(a) * rm, 2.4, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  // frame px -> token px. The token shows a circle with diameter = frame height,
+  // centred on the frame centre, so the crop matches the card.
+  function tokenScale() { return (2 * L.token.ri) / L.frame.h; }
+
+  return { W, H, TOKEN, layout: L, renderCard, renderToken, clampCrop, tokenScale };
+})();
+
+/* ==========================================================================
+   UI
+   ========================================================================== */
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const canvas = $('canvas'), ctx = canvas.getContext('2d');
+  const stage = $('stage');
+  const titleIn = $('title'), descIn = $('desc');
+  const zoomIn = $('zoom'), zoomOut = $('zoomOut');
+  const tokenIn = $('tokenMode'), dlBtn = $('download');
+  const fileIn = $('file'), dropzone = $('dropzone');
+  const meta = $('meta');
+  const F = ScrollCard.layout.frame;
+
+  const state = { image: null, imageUrl: null, crop: { zoom: 1, panX: 0, panY: 0 }, ready: false };
+
+  // Optional deep-link prefill: ?title=...&desc=...&token=1
+  const qs = new URLSearchParams(location.search);
+  if (qs.has('title')) titleIn.value = qs.get('title');
+  if (qs.has('desc')) descIn.value = qs.get('desc');
+  if (qs.get('token') === '1') tokenIn.checked = true;
+
+  /* ---------- rendering ---------- */
+
+  let frameReq = 0;
+  function schedule() {
+    if (!state.ready || frameReq) return;
+    frameReq = requestAnimationFrame(() => { frameReq = 0; draw(); });
+  }
+
+  function draw() {
+    const token = tokenIn.checked;
+    const w = token ? ScrollCard.TOKEN : ScrollCard.W;
+    const h = token ? ScrollCard.TOKEN : ScrollCard.H;
+    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; fit(); }
+    const opts = { title: titleIn.value, description: descIn.value, image: state.image, crop: state.crop, placeholder: true };
+    if (token) {
+      ScrollCard.renderToken(ctx, opts);
+      meta.textContent = `Token · 280×280 · ${slug()}-token.png`;
+    } else {
+      const info = ScrollCard.renderCard(ctx, opts);
+      const parts = [`560×840 · ${slug()}.png`];
+      if (info.title.size) parts.push(`title ${info.title.size}px${info.title.lines.length > 1 ? ' (2 lines)' : ''}`);
+      if (info.description.size) parts.push(`text ${info.description.size}px · ${info.description.lines.length} lines`);
+      meta.textContent = parts.join(' · ');
+      const warn = [info.title.truncated && 'title', info.description.truncated && 'description'].filter(Boolean);
+      if (warn.length) {
+        const s = document.createElement('span');
+        s.className = 'warn';
+        s.textContent = ` · ${warn.join(' & ')} too long, truncated`;
+        meta.appendChild(s);
+      }
+    }
+  }
+
+  function fit() {
+    const pad = 16;
+    const aw = stage.clientWidth - pad * 2, ah = stage.clientHeight - pad * 2;
+    const ratio = canvas.width / canvas.height;
+    let w = aw, h = aw / ratio;
+    if (h > ah) { h = ah; w = ah * ratio; }
+    if (canvas.width === ScrollCard.TOKEN) { w = Math.min(w, 420); h = w; }
+    canvas.style.width = Math.max(0, Math.floor(w)) + 'px';
+    canvas.style.height = Math.max(0, Math.floor(h)) + 'px';
+  }
+  new ResizeObserver(fit).observe(stage);
+
+  function slug() {
+    return titleIn.value.normalize('NFKD').replace(/[̀-ͯ]/g, '')
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'scroll-card';
+  }
+
+  /* ---------- crop interaction ---------- */
+
+  const isToken = () => tokenIn.checked;
+  const viewScale = () => (isToken() ? ScrollCard.tokenScale() : 1);
+  const viewCenter = () => (isToken()
+    ? { x: ScrollCard.TOKEN / 2, y: ScrollCard.TOKEN / 2 }
+    : { x: F.x + F.w / 2, y: F.y + F.h / 2 });
+
+  function toCanvas(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) * (canvas.width / r.width), y: (e.clientY - r.top) * (canvas.height / r.height) };
+  }
+  // canvas px -> frame px relative to frame centre
+  function toFrame(p) {
+    const c = viewCenter(), k = viewScale();
+    return { x: (p.x - c.x) / k, y: (p.y - c.y) / k };
+  }
+  function hit(p) {
+    if (isToken()) {
+      const c = viewCenter();
+      return Math.hypot(p.x - c.x, p.y - c.y) <= ScrollCard.layout.token.ro;
+    }
+    return p.x >= F.x && p.x <= F.x + F.w && p.y >= F.y && p.y <= F.y + F.h;
+  }
+
+  function syncZoomUI() {
+    zoomIn.value = state.crop.zoom;
+    zoomOut.textContent = Math.round(state.crop.zoom * 100) + '%';
+  }
+
+  function zoomAt(z, at = { x: 0, y: 0 }) {
+    const c = state.crop, z0 = c.zoom;
+    const z1 = Math.min(5, Math.max(1, z));
+    c.panX = at.x - (at.x - c.panX) * (z1 / z0);
+    c.panY = at.y - (at.y - c.panY) * (z1 / z0);
+    c.zoom = z1;
+    ScrollCard.clampCrop(state.image, c);
+    syncZoomUI();
+    schedule();
+  }
+
+  function resetCrop() {
+    state.crop = { zoom: 1, panX: 0, panY: 0 };
+    syncZoomUI();
+    schedule();
+  }
+
+  zoomIn.addEventListener('input', () => zoomAt(parseFloat(zoomIn.value)));
+  $('resetCrop').addEventListener('click', resetCrop);
+
+  const pointers = new Map();
+  let pinch = null;
+
+  canvas.addEventListener('pointerdown', (e) => {
+    const p = toCanvas(e);
+    if (!state.image || !hit(p)) return;
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    pointers.set(e.pointerId, p);
+    canvas.classList.add('grabbing');
+    if (pointers.size === 2) {
+      const [a, b] = [...pointers.values()];
+      pinch = { dist: Math.hypot(a.x - b.x, a.y - b.y), zoom: state.crop.zoom, mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } };
+    }
+  });
+
+  canvas.addEventListener('pointermove', (e) => {
+    const p = toCanvas(e);
+    if (!pointers.has(e.pointerId)) {
+      canvas.classList.toggle('grab', !!state.image && hit(p));
+      return;
+    }
+    const prev = pointers.get(e.pointerId);
+    pointers.set(e.pointerId, p);
+    const k = viewScale();
+    if (pointers.size === 1) {
+      state.crop.panX += (p.x - prev.x) / k;
+      state.crop.panY += (p.y - prev.y) / k;
+      ScrollCard.clampCrop(state.image, state.crop);
+      schedule();
+    } else if (pointers.size === 2 && pinch) {
+      const [a, b] = [...pointers.values()];
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      state.crop.panX += (mid.x - pinch.mid.x) / k;
+      state.crop.panY += (mid.y - pinch.mid.y) / k;
+      pinch.mid = mid;
+      zoomAt(pinch.zoom * Math.hypot(a.x - b.x, a.y - b.y) / pinch.dist, toFrame(mid));
+    }
+  });
+
+  const endPointer = (e) => {
+    pointers.delete(e.pointerId);
+    if (pointers.size < 2) pinch = null;
+    if (!pointers.size) canvas.classList.remove('grabbing');
+  };
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+
+  canvas.addEventListener('wheel', (e) => {
+    const p = toCanvas(e);
+    if (!state.image || !hit(p)) return;
+    e.preventDefault();
+    const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+    zoomAt(state.crop.zoom * Math.exp(-dy * 0.0015), toFrame(p));
+  }, { passive: false });
+
+  /* ---------- image input ---------- */
+
+  function loadFile(file) {
+    if (!file || !file.type.startsWith('image/')) {
+      $('fileName').textContent = 'That file is not an image.';
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
+      state.image = img; state.imageUrl = url;
+      $('thumb').style.backgroundImage = `url("${url}")`;
+      $('fileName').textContent = `${file.name || 'pasted image'} · ${img.naturalWidth}×${img.naturalHeight}`;
+      resetCrop();
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      $('fileName').textContent = 'Could not read that image (try PNG, JPG or WebP).';
+    };
+    img.src = url;
+  }
+
+  $('pick').addEventListener('click', () => fileIn.click());
+  fileIn.addEventListener('change', () => { loadFile(fileIn.files[0]); fileIn.value = ''; });
+
+  // Drop anywhere on the page; highlight the drop zone while dragging.
+  let dragDepth = 0;
+  const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+  window.addEventListener('dragenter', (e) => { if (hasFiles(e)) { dragDepth++; dropzone.classList.add('over'); } });
+  window.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; dropzone.classList.remove('over'); } });
+  window.addEventListener('dragover', (e) => { if (hasFiles(e)) e.preventDefault(); });
+  window.addEventListener('drop', (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0; dropzone.classList.remove('over');
+    loadFile([...e.dataTransfer.files].find((f) => f.type.startsWith('image/')) || e.dataTransfer.files[0]);
+  });
+  window.addEventListener('paste', (e) => {
+    const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith('image/'));
+    if (item) { e.preventDefault(); loadFile(item.getAsFile()); }
+  });
+
+  /* ---------- text + mode ---------- */
+
+  titleIn.addEventListener('input', schedule);
+  descIn.addEventListener('input', schedule);
+  tokenIn.addEventListener('change', () => {
+    dlBtn.textContent = tokenIn.checked ? 'Download token PNG' : 'Download PNG';
+    schedule();
+  });
+
+  /* ---------- export ---------- */
+
+  dlBtn.addEventListener('click', () => {
+    const token = tokenIn.checked;
+    const c = document.createElement('canvas');
+    c.width = token ? ScrollCard.TOKEN : ScrollCard.W;
+    c.height = token ? ScrollCard.TOKEN : ScrollCard.H;
+    const opts = { title: titleIn.value, description: descIn.value, image: state.image, crop: state.crop, placeholder: false };
+    token ? ScrollCard.renderToken(c.getContext('2d'), opts) : ScrollCard.renderCard(c.getContext('2d'), opts);
+    const name = slug() + (token ? '-token' : '') + '.png';
+    c.toBlob((blob) => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    }, 'image/png');
+  });
+
+  /* ---------- boot: wait for fonts ---------- */
+
+  const timeout = (ms) => new Promise((r) => setTimeout(r, ms));
+  Promise.race([
+    Promise.all([
+      document.fonts.load('700 44px Cinzel'),
+      document.fonts.load('500 25px "EB Garamond"'),
+    ]).then(() => document.fonts.ready),
+    timeout(4000), // offline? fall back to serif rather than hang
+  ]).finally(() => {
+    state.ready = true;
+    dlBtn.disabled = false;
+    tokenIn.dispatchEvent(new Event('change'));
+    fit();
+    draw();
+  });
+})();
+</script>
+</body>
+</html>
